@@ -1,0 +1,74 @@
+esphome:
+  name: phsensor
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: "xxx"
+  password: "xxx"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "xxx"
+    password: "xxx"
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+sensor:
+  # https://esphome.io/components/sensor/adc.html
+  - platform: adc
+    pin: A0
+    id: ph
+    name: "pH Sensor"
+    update_interval: 1s
+    unit_of_measurement: pH
+    # https://esphome.io/components/sensor/index.html#sensor-filters
+    filters:
+      - median:
+          window_size: 7
+          send_every: 4
+          send_first_at: 3
+      # Measured voltage -> Actual pH (buffer solution)
+      - calibrate_linear:
+          - 0.59 -> 7.0
+          - 0.71 -> 4.0
+
+i2c:
+  sda: D2
+  scl: D1
+  scan: true
+  
+display:
+  - platform: lcd_pcf8574
+    dimensions: 16x2
+    lambda: |-
+      it.printf(0, 0, "pH: %.2f", id(ph).state);
+      if (id(ph).state < 4) {
+        it.print(0, 1, "Very acidic");
+      }
+      else if (id(ph).state >= 4 && id(ph).state < 5) {
+        it.print(0, 1, "Acidic");
+      }
+      else if (id(ph).state >= 5 && id(ph).state < 7) {
+        it.print(0, 1, "Acidic-ish");
+      }
+      else if (id(ph).state >= 7 && id(ph).state < 8) {
+        it.print(0, 1, "Neutral");
+      }
+      else if (id(ph).state >= 8 && id(ph).state < 10) {
+        it.print(0, 1, "Alkaline-ish");
+      }
+      else if (id(ph).state >= 10 && id(ph).state < 11) {
+        it.print(0, 1, "Alkaline");
+      }
+      else if (id(ph).state >= 11) {
+        it.print(0, 1, "Very alkaline");
+      }
